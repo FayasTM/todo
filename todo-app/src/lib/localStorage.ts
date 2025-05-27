@@ -1,5 +1,3 @@
-
-
 import { Todo } from "types";
 
 
@@ -16,7 +14,6 @@ export const saveTodosToLocalStorage = (todos: Todo[]) => {
 };
 
 export const addTodoToLocalStorage = (todo: Todo) => {
-  const existingTodos = getTodosFromLocalStorage(todo.userId);
   const allTodos = JSON.parse(localStorage.getItem("todos") || "[]");
   saveTodosToLocalStorage([...allTodos, todo]);
 };

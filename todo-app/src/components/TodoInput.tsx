@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Todo } from "types";
-import { addTodoToLocalStorage, saveTodosToLocalStorage } from "lib/localStorage";
+import { addTodoToLocalStorage } from "lib/localStorage";
 
 
 

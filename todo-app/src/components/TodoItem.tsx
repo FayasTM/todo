@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-
 import { Button } from "./ui/button";
 import { Todo } from "types";
 
@@ -16,7 +15,7 @@ interface TodoItemProps {
   setSelectedTodoId: (id: string | null) => void;
 }
 
-export default function TodoItem({ todo, toggleTodo, deleteTodo, updateTodoText, selectedTodoId, setSelectedTodoId }: TodoItemProps) {
+export default function TodoItem({ todo, deleteTodo, updateTodoText, selectedTodoId, setSelectedTodoId }: TodoItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(todo.text);
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: todo.id });
@@ -26,9 +25,6 @@ export default function TodoItem({ todo, toggleTodo, deleteTodo, updateTodoText,
     transition,
   };
 
-  const handleToggle = () => {
-    toggleTodo(todo.id);
-  };
 
   const handleDelete = () => {
     deleteTodo(todo.id);
