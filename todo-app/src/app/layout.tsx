@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Josefin_Sans } from "next/font/google";
 import "./globals.css";
-import Providers from "@/components/Providers"; // Import the client component
+import Providers from "components/Providers"; // Import the client component
+
 
 // Import Josefin Sans font
 const josefinSans = Josefin_Sans({

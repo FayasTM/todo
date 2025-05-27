@@ -1,26 +1,52 @@
 "use client";
 
-import { Todo } from "../types";
-import { updateTodoInLocalStorage } from "../lib/localStorage";
+import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
+import { Button } from "./ui/button";
+import { Todo } from "types";
+
 interface TodoItemProps {
   todo: Todo;
+  toggleTodo: (id: string) => void;
+  deleteTodo: (id: string) => void;
+  updateTodoText: (id: string, newText: string) => void;
+  selectedTodoId: string | null;
+  setSelectedTodoId: (id: string | null) => void;
 }
 
-export default function TodoItem({ todo }: TodoItemProps) {
-  const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id: todo.id });
+export default function TodoItem({ todo, toggleTodo, deleteTodo, updateTodoText, selectedTodoId, setSelectedTodoId }: TodoItemProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editText, setEditText] = useState(todo.text);
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: todo.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
   };
 
-  const toggleTodo = () => {
-    const updatedTodo = { ...todo, completed: !todo.completed };
-    updateTodoInLocalStorage(updatedTodo);
+  const handleToggle = () => {
+    toggleTodo(todo.id);
+  };
+
+  const handleDelete = () => {
+    deleteTodo(todo.id);
+  };
+
+  const handleEdit = () => {
+    if (isEditing) {
+      if (editText.trim()) {
+        updateTodoText(todo.id, editText);
+      } else {
+        setEditText(todo.text);
+      }
+    }
+    setIsEditing(!isEditing);
+  };
+
+  const handleRadioChange = () => {
+    setSelectedTodoId(todo.id);
   };
 
   return (
@@ -29,53 +55,51 @@ export default function TodoItem({ todo }: TodoItemProps) {
       style={style}
       {...attributes}
       {...listeners}
-      className="flex items-center justify-between p-4 border-b border-very-light-grayish-blue dark:border-dark-very-dark-grayish-blue-2 bg-very-light-gray dark:bg-very-dark-desaturated-blue"
+      className="flex items-center p-4 border-b border-light-grayish-blue dark:border-dark-very-dark-grayish-blue-2 bg-white dark:bg-very-dark-desaturated-blue"
     >
-      <div className="flex items-center">
-        <button
-          onClick={toggleTodo}
-          className={`w-6 h-6 rounded-full border mr-4 flex items-center justify-center ${
-            todo.completed
-              ? "bg-check-gradient"
-              : "border-light-grayish-blue dark:border-dark-dark-grayish-blue"
-          }`}
-        >
-          {todo.completed && (
-            <svg
-              className="w-4 h-4 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          )}
-        </button>
+      <input
+        type="radio"
+        checked={selectedTodoId === todo.id}
+        onChange={handleRadioChange}
+        name="todo"
+        className="mr-4 h-5 w-5 rounded-full border-light-grayish-blue dark:border-dark-very-dark-grayish-blue-2"
+      />
+      {isEditing ? (
+        <input
+          type="text"
+          value={editText}
+          onChange={(e) => setEditText(e.target.value)}
+          onBlur={handleEdit}
+          onKeyPress={(e) => e.key === "Enter" && handleEdit()}
+          autoFocus
+          className="flex-grow p-1 text-very-dark-grayish-blue dark:text-dark-light-grayish-blue bg-transparent border-b border-light-grayish-blue dark:border-dark-very-dark-grayish-blue-2 focus:outline-none"
+        />
+      ) : (
         <span
-          className={`${
+          className={`flex-grow ${
             todo.completed
               ? "line-through text-light-grayish-blue dark:text-dark-dark-grayish-blue"
               : "text-very-dark-grayish-blue dark:text-dark-light-grayish-blue"
           }`}
+          onDoubleClick={() => setIsEditing(true)}
         >
           {todo.text}
         </span>
+      )}
+      <div className="flex space-x-2">
+        <Button
+          onClick={handleEdit}
+          className="p-1 text-bright-blue hover:underline"
+        >
+          {isEditing ? "Save" : "Edit"}
+        </Button>
+        <Button
+          onClick={handleDelete}
+          className="p-1 text-red-500 hover:underline"
+        >
+          Delete
+        </Button>
       </div>
-      <button
-        onClick={() => {
-          const allTodos = JSON.parse(localStorage.getItem("todos") || "[]");
-          const updatedTodos = allTodos.filter((t: Todo) => t.id !== todo.id);
-          localStorage.setItem("todos", JSON.stringify(updatedTodos));
-        }}
-        className="text-dark-grayish-blue dark:text-dark-dark-grayish-blue"
-      >
-        ✕
-      </button>
     </div>
   );
 }

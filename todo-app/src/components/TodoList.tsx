@@ -1,116 +1,89 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
-import { DndContext, closestCenter } from "@dnd-kit/core";
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-  arrayMove,
-} from "@dnd-kit/sortable";
-import { Todo } from "../types";
-import {
-  getTodosFromLocalStorage,
-  addTodoToLocalStorage,
-  saveTodosToLocalStorage,
-  deleteCompletedTodos,
-} from "../lib/localStorage";
+import { DndContext, closestCenter, DragEndEvent } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
+import TodoInput from "./TodoInput";
 import TodoItem from "./TodoItem";
-import { Button } from "./ui/button";
+import TodoFooter from "./TodoFooter";
+import { Todo } from "types";
+
 
 export default function TodoList() {
-  const { data: session } = useSession();
   const [todos, setTodos] = useState<Todo[]>([]);
-  const [newTodoText, setNewTodoText] = useState("");
+  const [selectedTodoId, setSelectedTodoId] = useState<string | null>(null);
+  const [filter, setFilter] = useState("All");
 
   useEffect(() => {
-    if (session?.user?.userId) {
-      const userTodos = getTodosFromLocalStorage(session.user.userId);
-      setTodos(userTodos);
-    }
-  }, [session]);
+    const allTodos = JSON.parse(localStorage.getItem("todos") || "[]");
+    setTodos(allTodos.filter((todo: Todo) => todo.userId === "global"));
+  }, []);
 
-  const addTodo = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTodoText.trim() || !session?.user?.userId) return;
-    const newTodo: Todo = {
-      id: Date.now().toString(),
-      text: newTodoText.trim(),
-      completed: false,
-      userId: session.user.userId,
-    };
-    addTodoToLocalStorage(newTodo);
-    setTodos((prevTodos) => [...prevTodos, newTodo]);
-    setNewTodoText("");
-  };
-
-  const handleDragEnd = (event: any) => {
+  const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    if (active.id !== over.id) {
-      setTodos((prevTodos) => {
-        const oldIndex = prevTodos.findIndex((todo) => todo.id === active.id);
-        const newIndex = prevTodos.findIndex((todo) => todo.id === over.id);
-        const newOrder = arrayMove(prevTodos, oldIndex, newIndex);
-        saveTodosToLocalStorage(newOrder);
-        return newOrder;
-      });
+    if (active.id && over?.id) {
+      const oldIndex = todos.findIndex((todo) => todo.id === active.id.toString());
+      const newIndex = todos.findIndex((todo) => todo.id === over.id.toString());
+      if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+        const newOrder = arrayMove(todos, oldIndex, newIndex);
+        setTodos(newOrder);
+        localStorage.setItem("todos", JSON.stringify(newOrder));
+      }
     }
   };
 
   const toggleTodo = (id: string) => {
-    setTodos((prevTodos) =>
-      prevTodos.map((todo) =>
-        todo.id === id ? { ...todo, completed: !todo.completed } : todo
-      )
+    const updatedTodos = todos.map((todo) =>
+      todo.id === id ? { ...todo, completed: !todo.completed } : todo
     );
-    saveTodosToLocalStorage(todos); // Save after toggling
+    setTodos(updatedTodos);
+    localStorage.setItem("todos", JSON.stringify(updatedTodos));
   };
 
-  const clearCompleted = () => {
-    if (!session?.user?.userId) return;
-    deleteCompletedTodos(session.user.userId);
-    setTodos((prevTodos) =>
-      prevTodos.filter((todo) => !(todo.completed && todo.userId === session.user.userId))
-    );
+  const deleteTodo = (id: string) => {
+    const updatedTodos = todos.filter((todo) => todo.id !== id);
+    setTodos(updatedTodos);
+    localStorage.setItem("todos", JSON.stringify(updatedTodos));
+    if (selectedTodoId === id) setSelectedTodoId(null);
   };
 
-  if (!session) return null; // Return null if not authenticated
+  const updateTodoText = (id: string, newText: string) => {
+    const updatedTodos = todos.map((todo) =>
+      todo.id === id ? { ...todo, text: newText } : todo
+    );
+    setTodos(updatedTodos);
+    localStorage.setItem("todos", JSON.stringify(updatedTodos));
+  };
+
+  const filteredTodos = todos.filter((todo) => {
+    if (filter === "Active") return !todo.completed;
+    if (filter === "Completed") return todo.completed;
+    return true;
+  });
 
   return (
-    <div className="bg-white dark:bg-very-dark-desaturated-blue rounded-t-md shadow-lg">
-      <form onSubmit={addTodo} className="p-4 border-b border-light-grayish-blue dark:border-dark-very-dark-grayish-blue-2 flex items-center">
-        <input
-          type="text"
-          value={newTodoText}
-          onChange={(e) => setNewTodoText(e.target.value)}
-          placeholder="Create a new todo..."
-          className="flex-grow p-2 text-very-dark-grayish-blue dark:text-dark-light-grayish-blue bg-transparent border-none focus:outline-none"
-        />
-        <Button type="submit" className="ml-2 p-2 bg-transparent border-none">
-          Add
-        </Button>
-      </form>
-      <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={todos} strategy={verticalListSortingStrategy}>
-          {todos.map((todo) => (
-            <TodoItem
-              key={todo.id}
-              todo={todo}
-              toggleTodo={toggleTodo}
-            />
-          ))}
-        </SortableContext>
-      </DndContext>
-      {todos.some((todo) => todo.completed) && (
-        <div className="p-4 text-dark-grayish-blue dark:text-dark-dark-grayish-blue text-center">
-          <button
-            onClick={clearCompleted}
-            className="underline hover:text-very-dark-grayish-blue dark:hover:text-dark-light-grayish-blue"
-          >
-            Clear Completed
-          </button>
+    <div className="bg-white dark:bg-very-dark-desaturated-blue rounded-md shadow-lg">
+      <div className="gap-y-4"> {/* Added gap-y-4 to create vertical spacing */}
+        <TodoInput todos={todos} setTodos={setTodos} />
+        <div className="space-y-2">
+          <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={filteredTodos} strategy={verticalListSortingStrategy}>
+              {filteredTodos.map((todo) => (
+                <TodoItem
+                  key={todo.id}
+                  todo={todo}
+                  toggleTodo={toggleTodo}
+                  deleteTodo={deleteTodo}
+                  updateTodoText={updateTodoText}
+                  selectedTodoId={selectedTodoId}
+                  setSelectedTodoId={setSelectedTodoId}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
         </div>
-      )}
+      </div>
+      {todos.length > 0 && <TodoFooter todos={todos} setTodos={setTodos} filter={filter} setFilter={setFilter} />}
     </div>
   );
 }

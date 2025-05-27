@@ -1,12 +1,14 @@
-// src/lib/localStorage.ts
-import { Todo } from "../types";
+
+
+import { Todo } from "types";
+
 
 export const getTodosFromLocalStorage = (userId: string): Todo[] => {
   if (typeof window === "undefined") return [];
   const todos = localStorage.getItem("todos");
   if (!todos) return [];
   const allTodos: Todo[] = JSON.parse(todos);
-  return allTodos.filter((todo) => todo.userId === userId);
+  return allTodos.filter((todo) => todo.userId === userId || userId === "global");
 };
 
 export const saveTodosToLocalStorage = (todos: Todo[]) => {
@@ -30,7 +32,8 @@ export const updateTodoInLocalStorage = (updatedTodo: Todo) => {
 export const deleteCompletedTodos = (userId: string) => {
   const allTodos = JSON.parse(localStorage.getItem("todos") || "[]");
   const updatedTodos = allTodos.filter(
-    (todo: Todo) => !(todo.userId === userId && todo.completed)
+    (todo: Todo) => !(todo.userId === userId && todo.completed) || userId === "global"
   );
   saveTodosToLocalStorage(updatedTodos);
 };
+

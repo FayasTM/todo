@@ -18,7 +18,7 @@ export default function AuthButton() {
 
   return (
     <button
-      onClick={() => signIn(undefined, { callbackUrl: "/signin" })}
+      onClick={() => signIn("credentials")} // No redirect; form is on the home page
       className="text-bright-blue hover:underline"
     >
       Sign in

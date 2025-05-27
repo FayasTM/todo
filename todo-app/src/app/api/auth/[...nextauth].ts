@@ -1,4 +1,4 @@
-// src/app/api/auth/[...nextauth].ts
+
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
@@ -20,7 +20,7 @@ export const authOptions = {
             id: "1",
             name: "user1",
             email: "user1@example.com",
-            userId: "user1", // Add userId to the session for todo filtering
+            userId: "user1", // Used for todo filtering
           };
         }
         return null;
@@ -28,7 +28,7 @@ export const authOptions = {
     }),
   ],
   pages: {
-    signIn: "/signin", // Points to the dedicated sign-in page
+    signIn: undefined, // Remove the dedicated sign-in page; handle on home page
   },
   debug: true, // Enable debug logs to troubleshoot
 };
